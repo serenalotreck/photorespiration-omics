@@ -57,8 +57,8 @@ def main(data_dir, semantic_names, skip_missing, out_loc):
             else:
                 samp_name = elt.split('_')[0]
             samples['sample'].append(samp_name)
-            samples['fastq_1'].append(elt)
-            samples['fastq_2'].append(all_fastq[i+1])
+            samples['fastq_1'].append(abspath(f'{data_dir}/{elt}')) # Generate absolute paths for fastq files
+            samples['fastq_2'].append(abspath(f'{data_dir}/{all_fastq[i+1]}'))
             samples['strandedness'].append('auto')
 
     # Make dataframe
