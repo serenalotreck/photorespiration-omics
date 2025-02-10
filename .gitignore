@@ -2,3 +2,5 @@ data
 larry_DEG_analyses
 .ipynb_checkpoints
 shell_scripts
+notebooks/old_notebooks
+__pycache__
