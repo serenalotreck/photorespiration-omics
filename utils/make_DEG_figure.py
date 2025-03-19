@@ -7,7 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-def makeDEGfigure(deg_dfs, photosynth_sets, photosynth_colors, semantic_names, tair2gene, legend_semantic, id_col='gene_id', title_name='genes'):
+def makeDEGfigure(deg_dfs, photosynth_sets, photosynth_colors, semantic_names, tair2gene,id_col='gene_id', title_name='genes'):
     """
     Maked stacked expresion figure.
 
@@ -22,8 +22,6 @@ def makeDEGfigure(deg_dfs, photosynth_sets, photosynth_colors, semantic_names, t
             semantic names to be used as subplot titles
         tair2gene, dict: keys are lwoercased TAIR ID's of the genes in the
             plot, values are the gene names
-        legend_semantic, dict: keys are the keys of photosynth sets, values are
-            semantic names to be used in legend
         id_col, str: name of the column with the gene IDs
     """
     # Capitalize the photosynthesis 
@@ -39,7 +37,7 @@ def makeDEGfigure(deg_dfs, photosynth_sets, photosynth_colors, semantic_names, t
         for g in gs:
             g_to_group[g] = ph
     color_dict = {g: photosynth_colors[ph] for g, ph in g_to_group.items()}
-
+    
     # Get the intersections of the photosynth sets with the DEG conditions
     to_plot = {}
     for deg_set_name, deg_set in deg_dfs.items():
@@ -84,6 +82,6 @@ def makeDEGfigure(deg_dfs, photosynth_sets, photosynth_colors, semantic_names, t
     unique_lines = [legend_dict[x] for x in unique_labels]
     legend_x = axs.flatten()[-1].get_position().xmax
     legend_y = axs.flatten()[0].get_position().ymax
-    fig.legend(unique_lines, [legend_semantic[l] for l in unique_labels], loc=(8.75*legend_x/10, legend_y + legend_y/20)) # This may not generalize well, did by trial and error
+    fig.legend(unique_lines, unique_labels, loc=(8.75*legend_x/10, legend_y + legend_y/20)) # This may not generalize well, did by trial and error
 
     plt.subplots_adjust(hspace=1)

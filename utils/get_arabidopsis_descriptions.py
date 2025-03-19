@@ -7,33 +7,47 @@ from os.path import abspath
 import pandas as pd
 
 
-def get_arabidopsis_descriptions(gene_list, gene2GO, metadata_path):
+def get_arabidopsis_descriptions(gene_list, metadata_paths, gene2GO=None):
     """
     Get arabidopsis gene metadata.
 
     parameters:
         gene_list, list of str: genes to check
-        gene2GO, df: has columns object_name, GO_term, and GO_ID
-        metadata_path, str: path to the file containing Arabidopsis metadata
-            (Araport11_functional_descriptions_20241231.txt)
+        metadata_paths, dict: keys are annotation names, values are paths to
+            a file containing Arabidopsis metadata. Assumes all dfs have the
+            same column names
+        gene2GO, df: has columns object_name, GO_term, and GO_ID, provide if GO
+            terms should be included in output
 
     returns:
         gene_df, pandas df: genes with their associated data
     """
-    # Read in the file
-    metadata = pd.read_csv(abspath(metadata_path), sep='\t', header=0, encoding='Windows-1252')
-
+    # Process metadata
+    metadata_dfs = {}
+    for ann, metadata_path in metadata_paths.items():
+        # Read in the file
+        metadata = pd.read_csv(abspath(metadata_path), sep='\t', header=0, encoding='Windows-1252')
+        metadata_dfs[ann] = metadata
+    # If more than one, merge
+    if len(metadata_dfs) == 2:
+        all_metadata = pd.merge(
+        list(metadata_dfs.values())[0], list(metadata_dfs.values())[1],
+        left_on='name', right_on='name',
+        suffixes=(f'_{list(metadata_dfs.keys())[0]}', f'_{list(metadata_dfs.keys())[1]}'))
+    else:
+        all_metadata = metadata_dfs.values()[0]
     # Make a new column that can match the candidate genes
-    metadata['name_base'] = metadata['name'].str.split('.').str[0]
+    all_metadata['name_base'] = all_metadata['name'].str.split('.').str[0]
 
     # Add GO terms to metadata
-    go_df = gene2GO[['object_name', 'GO_term', 'GO_ID']].groupby('object_name').agg(list)
-    metadata = pd.merge(metadata, go_df, how='outer', left_on='name_base', right_on='object_name')
+    if gene2GO is not None:
+        go_df = gene2GO[['object_name', 'GO_term', 'GO_ID']].groupby('object_name').agg(list)
+        all_metadata = pd.merge(all_metadata, go_df, how='outer', left_on='name_base', right_on='object_name')
 
     # Make gene_list into a Series
     gene_list = pd.Series(gene_list, name='name_base') # To match with metadata df
 
     # Subset by gene list; left join to preserve IDs for novel genes/chimeras
-    gene_df = pd.merge(gene_list, metadata, how='left', on='name_base').set_index(['name_base', 'name'])
+    gene_df = pd.merge(gene_list, all_metadata, how='left', on='name_base').set_index(['name_base', 'name'])
 
     return gene_df
