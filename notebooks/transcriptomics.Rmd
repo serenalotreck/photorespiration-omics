@@ -24,7 +24,7 @@ We first want to perform a PCA to make sure that our samples separate. We'll do 
 First, we'll read in the transcript to gene ID map associated with the reference transcriptome that we used for pseudoalignment:
 
 ```{r}
-tx2gene <- read_csv('/mnt/home/lotrecks/WalkerLab/photorespiration-omics/data/AtRTD3_gene_transcript.csv')
+tx2gene <- read_csv('/mnt/home/lotrecks/WalkerLab/photorespiration-omics/data/external_data/AtRTD3_gene_transcript.csv')
 names(tx2gene)[1] <- "transcript_id"
 names(tx2gene)[2] <- "gene_id"
 head(tx2gene)
@@ -67,6 +67,7 @@ We can now perform the actual actions of the PCA, which are to read the tximport
 ddsTC <- DESeqDataSetFromTximport(txi.kallisto, sampleTable,design=~hour+o2+hour:o2)
 vsd <- vst(ddsTC, blind = FALSE)
 plotPCA(vsd, intgroup=c("hour", "o2"))+theme_bw()
+#ggsave("/mnt/home/lotrecks/WalkerLab/photorespiration-omics/data/figures/PCA_RNAseq_AtRTD3_25Mar2025.jpg");
 ```
 
 In contrast to when an older version of the reference transcriptome was used, we do see separation of the samples at the 1 hour time point.
