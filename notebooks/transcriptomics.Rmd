@@ -21,34 +21,31 @@ library(clipr)
 
 We first want to perform a PCA to make sure that our samples separate. We'll do this by reading in transcript abundances from our kallisto output and processing them with the PCA function of the DESeq2 module.
 
-First, we'll read in the transcript to gene ID map associated with the reference transcriptome that we used for pseudoalignment:
+We first need to define the file paths for the samples we want to read:
 
 ```{r}
-tx2gene <- read_csv('/mnt/home/lotrecks/WalkerLab/photorespiration-omics/data/external_data/AtRTD3_gene_transcript.csv')
-names(tx2gene)[1] <- "transcript_id"
-names(tx2gene)[2] <- "gene_id"
-head(tx2gene)
-```
 
-We now need to define the file paths for the samples we want to read:
+samples=c("1h_2o2_e","1h_2o2_b","1h_2o2_c","1h_2o2_d", "1h_21o2_a","1h_21o2_b","1h_21o2_c","1h_21o2_d", "1h_40o2_a","1h_40o2_b","1h_40o2_c","1h_40o2_d", "7h_2o2_a","7h_2o2_b","7h_2o2_c","7h_2o2_d", "7h_21o2_a","7h_21o2_b","7h_21o2_c","7h_21o2_d", "7h_40o2_a","7h_40o2_b","7h_40o2_c","7h_40o2_d") 
 
-```{r}
-samples=c("1h_2o2_e","1h_2o2_b","1h_2o2_c","1h_2o2_d",
-"1h_21o2_a","1h_21o2_b","1h_21o2_c","1h_21o2_d",
-"1h_40o2_a","1h_40o2_b","1h_40o2_c","1h_40o2_d",
-"7h_2o2_a","7h_2o2_b","7h_2o2_c","7h_2o2_d",
-"7h_21o2_a","7h_21o2_b","7h_21o2_c","7h_21o2_d",
-"7h_40o2_a","7h_40o2_b","7h_40o2_c","7h_40o2_d")
-
-files <- file.path("/mnt/home/lotrecks/WalkerLab/photorespiration-omics/data/kallisto_quant_bs", samples, "abundance.h5")
+files <- file.path("/mnt/home/lotrecks/WalkerLab/photorespiration-omics/data/kallisto_quant_bs_ARAPORT11", samples, "abundance.h5")
 names(files) <- samples
 ```
 
-Read in the abundance files with tximport:
+First, we need the transcript to gene ID map associated with the reference transcriptome that we used for pseudoalignment. For Araport11, we just remove the isoform numbers after the decimal point. To do this, we'll use tximport to get the transcript ID's and drop the isoform numbers after the decimals:
+
+```{r}
+
+txi.kallisto <- tximport(files, type = "kallisto", txOut = TRUE)
+#head(txi.kallisto$counts)
+
+tx2gene <- data.frame(tx_id=rownames(txi.kallisto$counts),
+                         gene_id=substr(rownames(txi.kallisto$counts),1,9))
+```
+
+Now read in the abundance files with tximport:
 
 ```{r}
 txi.kallisto <- tximport(files, type = "kallisto", tx2gene=tx2gene)
-# head(txi.kallisto$counts)
 ```
 
 We also need to make a metadata table for input into DESeq2, which describes the conditions applied to each sample:
@@ -67,10 +64,8 @@ We can now perform the actual actions of the PCA, which are to read the tximport
 ddsTC <- DESeqDataSetFromTximport(txi.kallisto, sampleTable,design=~hour+o2+hour:o2)
 vsd <- vst(ddsTC, blind = FALSE)
 plotPCA(vsd, intgroup=c("hour", "o2"))+theme_bw()
-#ggsave("/mnt/home/lotrecks/WalkerLab/photorespiration-omics/data/figures/PCA_RNAseq_AtRTD3_25Mar2025.jpg");
+ggsave("/mnt/home/lotrecks/WalkerLab/photorespiration-omics/data/Araport11_outputs_ALL/figures/PCA_RNAseq_Araport11_28Mar2025.jpg");
 ```
-
-In contrast to when an older version of the reference transcriptome was used, we do see separation of the samples at the 1 hour time point.
 
 ## Differential expression
 
@@ -93,7 +88,7 @@ Because we have a total of 7 comparisons to make, we don't want to have to copy-
 compare_conditions <- function(samples, filepath, design, contrast, tx2gene, savepath){
   
   # Get paths for all relevant files
-  files <- file.path("/mnt/home/lotrecks/WalkerLab/photorespiration-omics/data/kallisto_quant_bs", samples, "abundance.h5")
+  files <- file.path(filepath, samples, "abundance.h5")
   names(files) <- samples
   
   # Read in files
@@ -137,27 +132,27 @@ compare_conditions <- function(samples, filepath, design, contrast, tx2gene, sav
 }
 ```
 
-Now that we have a function, we can run it for all the comparisons we're interested in. We'll then save the results as csv's and move over to Python to continue wiht data visualization.
+Now that we have a function, we can run it for all the comparisons we're interested in. We'll then save the results as csv's and move over to Python to continue with data visualization.
 
 1 hour vs. 7 hours, at 2% oxygen:
 
 ```{r}
 samples2o2 <- c("1h_2o2_e","1h_2o2_b","1h_2o2_c","1h_2o2_d","7h_2o2_a","7h_2o2_b","7h_2o2_c","7h_2o2_d")
-compare_conditions(samples2o2, '/mnt/home/lotrecks/WalkerLab/photorespiration-omics/data/kallisto_quant_bs', ~hour, c('hour', '7', '1'), tx2gene, '/mnt/home/lotrecks/WalkerLab/photorespiration-omics/data/deseq2_output/1h_vs_7h_2o2_greaterAbs_thresh_1_20Feb2025.csv')
+compare_conditions(samples2o2, '/mnt/home/lotrecks/WalkerLab/photorespiration-omics/data/kallisto_quant_bs_ARAPORT11', ~hour, c('hour', '7', '1'), tx2gene, '/mnt/home/lotrecks/WalkerLab/photorespiration-omics/data/Araport11_outputs_ALL/deseq2_output/1h_vs_7h_2o2_greaterAbs_thresh_1_Araport11_28Mar2025.csv')
 ```
 
 1 hour vs. 7 hours, at 21% oxygen:
 
 ```{r}
 samples21o2 <- c("1h_21o2_b","1h_21o2_c","1h_21o2_d","7h_21o2_a","7h_21o2_b","7h_21o2_c","7h_21o2_d")
-compare_conditions(samples21o2, '/mnt/home/lotrecks/WalkerLab/photorespiration-omics/data/kallisto_quant_bs', ~hour, c('hour', '7', '1'), tx2gene, '/mnt/home/lotrecks/WalkerLab/photorespiration-omics/data/deseq2_output/1h_vs_7h_21o2_greaterAbs_thresh_1_20Feb2025.csv')
+compare_conditions(samples21o2, '/mnt/home/lotrecks/WalkerLab/photorespiration-omics/data/kallisto_quant_bs_ARAPORT11', ~hour, c('hour', '7', '1'), tx2gene, '/mnt/home/lotrecks/WalkerLab/photorespiration-omics/data/Araport11_outputs_ALL/deseq2_output/1h_vs_7h_21o2_greaterAbs_thresh_1_Araport11_28Mar2025.csv')
 ```
 
 1 hour vs. 7 hours, at 40% oxygen:
 
 ```{r}
 samples40o2 <- c("1h_40o2_a","1h_40o2_b","1h_40o2_c","1h_40o2_d","7h_40o2_a","7h_40o2_b","7h_40o2_c","7h_40o2_d")
-compare_conditions(samples40o2, '/mnt/home/lotrecks/WalkerLab/photorespiration-omics/data/kallisto_quant_bs', ~hour, c('hour', '7', '1'), tx2gene, '/mnt/home/lotrecks/WalkerLab/photorespiration-omics/data/deseq2_output/1h_vs_7h_40o2_greaterAbs_thresh_1_20Feb2025.csv')
+compare_conditions(samples40o2, '/mnt/home/lotrecks/WalkerLab/photorespiration-omics/data/kallisto_quant_bs_ARAPORT11', ~hour, c('hour', '7', '1'), tx2gene, '/mnt/home/lotrecks/WalkerLab/photorespiration-omics/data/Araport11_outputs_ALL/deseq2_output/1h_vs_7h_40o2_greaterAbs_thresh_1_Araport11_28Mar2025.csv')
 ```
 
 Now let's do the comparisons between oxygen concentrations at each timepoint, using 21% as our comparison condition. Given that there are more comparisons here, I'd like to make a loop that automates subsetting the samples and calling the function. For simplicity, we'll do one loop for each of the timepoints rather than trying to combine them both.
@@ -189,10 +184,10 @@ for (x in list(c('o2', '2', '21'), c('o2', '40', '21'))){
   }
   
   # Define savepath
-  savepath = paste('/mnt/home/lotrecks/WalkerLab/photorespiration-omics/data/deseq2_output/1h', paste(x, collapse='_'), 'greaterAbs_thresh_1_20Feb2025.csv', sep='_')
+  savepath = paste('/mnt/home/lotrecks/WalkerLab/photorespiration-omics/data/Araport11_outputs_ALL/deseq2_output/1h', paste(x, collapse='_'), 'greaterAbs_thresh_1_Araport11_28Mar2025.csv', sep='_')
     
   # Now call the function
-  compare_conditions(loop_samps, '/mnt/home/lotrecks/WalkerLab/photorespiration-omics/data/kallisto_quant_bs', ~o2, x, tx2gene, savepath)
+  compare_conditions(loop_samps, '/mnt/home/lotrecks/WalkerLab/photorespiration-omics/data/kallisto_quant_bs_ARAPORT11', ~o2, x, tx2gene, savepath)
 }
 ```
 
@@ -223,9 +218,9 @@ for (x in list(c('o2', '2', '21'), c('o2', '40', '21'))){
   }
   
   # Define savepath
-  savepath = paste('/mnt/home/lotrecks/WalkerLab/photorespiration-omics/data/deseq2_output/7h', paste(x, collapse='_'), 'greaterAbs_thresh_1_20Feb2025.csv', sep='_')
+  savepath = paste('/mnt/home/lotrecks/WalkerLab/photorespiration-omics/data/Araport11_outputs_ALL/deseq2_output/7h', paste(x, collapse='_'), 'greaterAbs_thresh_1_Araport11_28Mar2025.csv', sep='_')
     
   # Now call the function
-  compare_conditions(loop_samps, '/mnt/home/lotrecks/WalkerLab/photorespiration-omics/data/kallisto_quant_bs', ~o2, x, tx2gene, savepath)
+  compare_conditions(loop_samps, '/mnt/home/lotrecks/WalkerLab/photorespiration-omics/data/kallisto_quant_bs_ARAPORT11', ~o2, x, tx2gene, savepath)
 }
 ```
