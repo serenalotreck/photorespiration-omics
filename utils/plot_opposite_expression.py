@@ -6,22 +6,23 @@ Author: Serena G. Lotreck
 import pandas as pd
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
+import numpy as np
 
 def plot_opposite_expression(log2fc_df, cols_to_plot, gene_name_map=None,
-                             scale_factor=50, title=None, dark=False):
+                             scale_factor=50, normalize=False, title=None, dark=False):
     """
-    Plot arrows for opposite expression. Assumes expression log2FC has been
-    normalized between -1 and 1 and that the log2fc_df index is in sequential
-    order starting with 0.
+    Plot arrows for opposite expression.
 
     parameters:
         log2fc_df, df: dataframe with log2FoldChange values to plot
-        cols_to_plot, dict: values are the semantic column header name
+        cols_to_plot, dict: keys are the semantic column header name
             to be used, values are the column names in log2fc_df
         gene_name_map, dict: keys are TAIR locus ID's, values are some
             semantic name to be added to the table
         scale_factor, int: amount to multiply the normalized expression value
             to determine arrow thickness
+        normalize, bool: whether or not to normalize between -1 and 1. Default
+            is False, assumes data has already been normalized
         title, str: optional, string to use for the title
         dark, bool: whether or not to use matplotlib dark background
 
@@ -31,6 +32,16 @@ def plot_opposite_expression(log2fc_df, cols_to_plot, gene_name_map=None,
         plt.style.use('dark_background')
     else:
         plt.rcdefaults()
+
+    # Normalize data if requested
+    if normalize:
+        log2fc_df = log2fc_df.copy()
+        all_exp = log2fc_df[list(cols_to_plot.values())].to_numpy().flatten()
+        norm_denom = max(all_exp) - min(all_exp)
+        for sem_col, col in cols_to_plot.items():
+            log2fc_df.loc[:, col + '_NORMALIZED'] = 2*((log2fc_df[col] - min(all_exp)) / norm_denom) - 1
+            cols_to_plot[sem_col] = col + '_NORMALIZED'
+    print(log2fc_df)
 
     fig, ax = plt.subplots(figsize=(8,6))
 
@@ -57,6 +68,8 @@ def plot_opposite_expression(log2fc_df, cols_to_plot, gene_name_map=None,
             
             arrow_dir = 'up' if row[cols_to_plot[to_plot]] > 0 else 'down'
             arrow_len = abs(row[cols_to_plot[to_plot]])
+            if np.isnan(arrow_len):
+                arrow_len = 0
             if arrow_dir == 'up':
                 start_coords = (j + 2, i - 0.5*arrow_len)
                 end_coords = (j + 2, i + 0.5*arrow_len)
