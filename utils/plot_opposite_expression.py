@@ -35,13 +35,15 @@ def plot_opposite_expression(log2fc_df, cols_to_plot, gene_name_map=None,
 
     # Normalize data if requested
     if normalize:
-        log2fc_df = log2fc_df.copy()
+        cols_to_plot = dict(cols_to_plot)
+        log2fc_df = log2fc_df.copy(deep=True)
         all_exp = log2fc_df[list(cols_to_plot.values())].to_numpy().flatten()
+        # Drop nan before getting min and max, for some reason this only causes problems some of the time
+        all_exp = [i for i in all_exp if not np.isnan(i)]
         norm_denom = max(all_exp) - min(all_exp)
         for sem_col, col in cols_to_plot.items():
             log2fc_df.loc[:, col + '_NORMALIZED'] = 2*((log2fc_df[col] - min(all_exp)) / norm_denom) - 1
             cols_to_plot[sem_col] = col + '_NORMALIZED'
-    print(log2fc_df)
 
     fig, ax = plt.subplots(figsize=(8,6))
 
