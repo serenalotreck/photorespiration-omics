@@ -37,17 +37,17 @@ def get_arabidopsis_descriptions(gene_list, metadata_paths, gene2GO=None):
     else:
         all_metadata = metadata_dfs.values()[0]
     # Make a new column that can match the candidate genes
-    all_metadata['name_base'] = all_metadata['name'].str.split('.').str[0]
+    all_metadata['gene_id'] = all_metadata['name'].str.split('.').str[0]
 
     # Add GO terms to metadata
     if gene2GO is not None:
         go_df = gene2GO[['object_name', 'GO_term', 'GO_ID']].groupby('object_name').agg(list)
-        all_metadata = pd.merge(all_metadata, go_df, how='outer', left_on='name_base', right_on='object_name')
+        all_metadata = pd.merge(all_metadata, go_df, how='outer', left_on='gene_id', right_on='object_name')
 
     # Make gene_list into a Series
-    gene_list = pd.Series(gene_list, name='name_base') # To match with metadata df
+    gene_list = pd.Series(gene_list, name='gene_id') # To match with metadata df
 
     # Subset by gene list; left join to preserve IDs for novel genes/chimeras
-    gene_df = pd.merge(gene_list, all_metadata, how='left', on='name_base').set_index(['name_base', 'name'])
+    gene_df = pd.merge(gene_list, all_metadata, how='left', on='gene_id').set_index(['gene_id', 'name'])
 
     return gene_df
