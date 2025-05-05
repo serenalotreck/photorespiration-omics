@@ -63,7 +63,7 @@ def plot_opposite_expression(log2fc_df, cols_to_plot, gene_name_map=None,
                 s = r"$\bf{" + gene_name_map[row.gene_id] + "}$ (" + row.gene_id + ')'
             except KeyError:
                 s = row.gene_id
-        ax.text(x=0.5, y=i, s=s)
+        ax.text(x=0.5, y=i, s=s, verticalalignment='center')
     
         # Add arrows
         for j, to_plot in enumerate(cols_to_plot.keys()):
