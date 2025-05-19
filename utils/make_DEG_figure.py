@@ -76,11 +76,11 @@ def makeDEGfigure(deg_dfs, photosynth_sets, photosynth_colors, semantic_names,
     # Plot
     if separate_columns:
         cols = len(photosynth_sets)
-        width = cols*7
+        width = cols*5
     else:
         cols = 1
         width = 20
-    fig, axs = plt.subplots(len(to_plot), cols, sharex='col', sharey=True, figsize=(width, len(to_plot)*7))
+    fig, axs = plt.subplots(len(to_plot), cols, sharex='col', sharey=True, figsize=(width, len(to_plot)*5))
 
     # There is definitely some better way to factor this, this is hideous
     if not separate_columns:
@@ -144,15 +144,15 @@ def makeDEGfigure(deg_dfs, photosynth_sets, photosynth_colors, semantic_names,
     else:
         fig.supylabel('log2FoldChange', x=ax.get_position().x0 - 0.7)
     
-    # To remove duplicate labels in legend
-    lines_labels = [ax.get_legend_handles_labels() for ax in fig.axes]
-    lines, labels = [sum(lol, []) for lol in zip(*lines_labels)]
-    unique_labels = set(labels)
-    legend_dict = dict(zip(labels, lines))
-    unique_lines = [legend_dict[x] for x in unique_labels]
-    legend_x = axs.flatten()[-1].get_position().xmax
-    legend_y = axs.flatten()[0].get_position().ymax
-    fig.legend(unique_lines, unique_labels, loc=(8.75*legend_x/10, legend_y + legend_y/50)) # This may not generalize well, did by trial and error
+    # # To remove duplicate labels in legend
+    # lines_labels = [ax.get_legend_handles_labels() for ax in fig.axes]
+    # lines, labels = [sum(lol, []) for lol in zip(*lines_labels)]
+    # unique_labels = set(labels)
+    # legend_dict = dict(zip(labels, lines))
+    # unique_lines = [legend_dict[x] for x in unique_labels]
+    # legend_x = axs.flatten()[-1].get_position().xmax
+    # legend_y = axs.flatten()[0].get_position().ymax
+    # fig.legend(unique_lines, unique_labels, loc=(8.75*legend_x/10, legend_y + legend_y/50)) # This may not generalize well, did by trial and error
 
     if show_all_x:
         plt.subplots_adjust(hspace=1)
